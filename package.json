@@ -1,0 +1,26 @@
+{
+  "name": "kibana-alert-router",
+  "version": "0.0.3",
+  "description": "Forwards kibana alerts written to an elasticsearch index",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/finboxio/kibana-alert-router.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/finboxio/kibana-alert-router/issues"
+  },
+  "homepage": "https://github.com/finboxio/kibana-alert-router#readme",
+  "dependencies": {
+    "@elastic/elasticsearch": "7.13.0",
+    "@pagerduty/pdjs": "2.2.2",
+    "envvar": "2.0.0",
+    "ms": "2.1.3"
+  }
+}
