@@ -10,6 +10,7 @@ ADD package-lock.json package-lock.json
 RUN npm install
 
 ADD index.js /usr/src/index.js
+ADD plugins /usr/src/plugins
 
 ENTRYPOINT ["/bin/sh" "-c" "node"]
 

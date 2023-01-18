@@ -3,7 +3,8 @@ import fs from 'fs'
 import env from 'envvar'
 import ms from 'ms'
 import Elasticsearch from '@elastic/elasticsearch'
-import { event } from '@pagerduty/pdjs'
+import PagerDuty from './plugins/pagerduty.js'
+import OpsGenie from './plugins/opsgenie.js'
 
 const NODE_ENV = env.string('NODE_ENV')
 const ROUTER_ID = env.string('ROUTER_ID', 'pagerduty')
@@ -15,7 +16,8 @@ const ELASTICSEARCH_PASSWORD = env.string('ELASTICSEARCH_PASSWORD')
 const ELASTICSEARCH_CA_FILE = env.string('ELASTICSEARCH_CA_FILE')
 const ELASTICSEARCH_ALERT_INDEX = env.string('ELASTICSEARCH_ALERT_INDEX')
 
-const PAGERDUTY_ROUTING_KEY = env.string('PAGERDUTY_ROUTING_KEY')
+const PAGERDUTY_ROUTING_KEY = env.string('PAGERDUTY_ROUTING_KEY', '')
+const OPSGENIE_API_KEY = env.string('OPSGENIE_API_KEY', '')
 
 const es = new Elasticsearch.Client({
   log: 'trace',
@@ -29,7 +31,14 @@ const es = new Elasticsearch.Client({
     ca: fs.readFileSync(ELASTICSEARCH_CA_FILE),
     rejectUnauthorized: true
   }
-});
+})
+
+const start = Date.now() - ms('24h')
+
+const Plugins = {
+  pagerduty: (key) => new PagerDuty(key, { env: NODE_ENV }),
+  opsgenie: (key) => new OpsGenie(key, { env: NODE_ENV }),
+}
 
 const run = async () => {
   const unroutedAlerts = await es.search({
@@ -37,8 +46,13 @@ const run = async () => {
     type: '_doc',
     size: 10000,
     body: {
-      query: { bool: { must_not: { exists: { field: `routed.by.${ROUTER_ID}` } } } },
-      sort: [{ "@timestamp" : "asc" }]
+      sort: [{ "@timestamp" : "asc" }],
+      query: { 
+        bool: { 
+          filter: { range: { '@timestamp': { gte: new Date(start).toISOString() } } },
+          must_not: { exists: { field: `routed.by.${ROUTER_ID}` } } 
+        } 
+      }
     }
   })
 
@@ -51,55 +65,32 @@ const run = async () => {
     const tags = hit._source.tags || []
     const action = hit._source.kibana.alert.actionGroup
     const timestamp = hit._source['@timestamp']
+    const context = hit._source.context
+
+    const alert = { ruleId, alertId, name, tags, action, timestamp, context }
 
     console.log('Action Received', action)
 
-    const sendTrigger = (key) => event({
-      data: {
-        event_action: 'trigger',
-        routing_key: key,
-        dedup_key: `${ruleId}:${alertId}`,
-        payload: {
-          timestamp,
-          summary: `[${NODE_ENV}] ${name} (${alertId})`,
-          source: 'elasticsearch',
-          severity: 'error',
-          custom_details: { ...hit._source.context }
-        }
-      }
-    })
+    const rtags = [ ...tags ]
+    if (PAGERDUTY_ROUTING_KEY) rtags.push(`pagerduty:${PAGERDUTY_ROUTING_KEY}`)
+    if (OPSGENIE_API_KEY) rtags.push(`opsgenie:${OPSGENIE_API_KEY}`)
 
-    const sendResolve = (key) => event({
-      data: {
-        event_action: 'resolve',
-        routing_key: key,
-        dedup_key: `${ruleId}:${alertId}`,
-        payload: {
-          timestamp,
-          summary: `[${NODE_ENV}] ${name}`,
-          source: 'elasticsearch',
-          severity: 'error'
-        }
-      }
-    })
+    const responders = rtags
+      .map((t) => {
+        const [ type, ...key ] = t.split(':')
+        if (Plugins[type]) return Plugins[type](...key)
+      })
+      .filter(Boolean)
 
     if (action === 'logs.threshold.fired' || action === 'metrics.inventory_threshold.fired' || action === 'metrics.threshold.fired') {
-      const triggers = await Promise.all([
-        sendTrigger(PAGERDUTY_ROUTING_KEY),
-        ...tags.filter((t) => t.startsWith('pagerduty:')).map((t) => t.replace('pagerduty:', '')).map(sendTrigger)
-      ])
-
-      if (triggers.find((res) => res.status >= 400)) {
+      const triggers = await Promise.all(responders.map((r) => r.trigger(alert).catch((e) => e)))
+      if (triggers.find((res) => res instanceof Error)) {
         console.error(triggers)
         return
       }
     } else if (action === 'recovered') {
-      const resolves = await Promise.all([
-        sendResolve(PAGERDUTY_ROUTING_KEY),
-        ...tags.filter((t) => t.startsWith('pagerduty:')).map((t) => t.replace('pagerduty:', '')).map(sendResolve)
-      ])
-
-      if (resolves.find((res) => res.status >= 400)) {
+      const resolves = await Promise.all(responders.map((r) => r.resolve(alert).catch((e) => e)))
+      if (resolves.find((res) => res instanceof Error)) {
         console.error(resolves)
         return
       }
