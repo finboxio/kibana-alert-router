@@ -13,13 +13,14 @@ const POLL_INTERVAL = env.string('POLL_INTERVAL', '1m')
 const ELASTICSEARCH_URL = env.string('ELASTICSEARCH_URL')
 const ELASTICSEARCH_USERNAME = env.string('ELASTICSEARCH_USERNAME')
 const ELASTICSEARCH_PASSWORD = env.string('ELASTICSEARCH_PASSWORD')
-const ELASTICSEARCH_CA_FILE = env.string('ELASTICSEARCH_CA_FILE')
+const ELASTICSEARCH_CA_FILE = env.string('ELASTICSEARCH_CA_FILE', '')
 const ELASTICSEARCH_ALERT_INDEX = env.string('ELASTICSEARCH_ALERT_INDEX')
 
 const PAGERDUTY_ROUTING_KEY = env.string('PAGERDUTY_ROUTING_KEY', '')
 const OPSGENIE_API_KEY = env.string('OPSGENIE_API_KEY', '')
 
-const es = new Elasticsearch.Client({
+
+const es = ELASTICSEARCH_CA_FILE ? (new Elasticsearch.Client({
   log: 'trace',
   apiVersion: '7.x',
   node: ELASTICSEARCH_URL,
@@ -31,7 +32,15 @@ const es = new Elasticsearch.Client({
     ca: fs.readFileSync(ELASTICSEARCH_CA_FILE),
     rejectUnauthorized: true
   }
-})
+})) : (new Elasticsearch.Client({
+  log: 'trace',
+  apiVersion: '7.x',
+  node: ELASTICSEARCH_URL,
+  auth: {
+    username: ELASTICSEARCH_USERNAME,
+    password: ELASTICSEARCH_PASSWORD
+  }
+}))
 
 const start = Date.now() - ms('24h')
 
