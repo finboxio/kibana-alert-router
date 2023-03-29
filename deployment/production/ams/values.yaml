@@ -1,0 +1,34 @@
+kibana-alert-router:
+  image:
+    imageURL: "nexus.investing.com/jfrog/finbox-docker-virtual/finboxio/kibana-alert-router"
+    pullPolicy: "IfNotPresent"
+    tag: v0.1.0
+    command:
+      - node
+      - index.js
+    args: []
+
+  serviceName: kibana-alert-router
+
+  resources:
+    limits:
+      cpu: "400m"
+      memory: "300Mi"
+    requests:
+      cpu: "200m"
+      memory: "150Mi"
+
+  replicaCount: 1
+
+  configMap:
+    NODE_ENV: GCP-PROD-AMS
+    ROUTER_ID: investing-alerts
+    OPSGENIE_API_KEY: 1fd13423-0c7d-4b58-9561-d3c11aaaf0c8
+    ELASTICSEARCH_URL: http://elasticsearch-es-http.elastic-system.svc.cluster.local:9200
+    ELASTICSEARCH_ALERT_INDEX: kibana-alert-history-default
+
+  vaultMap:
+    kv/data/applications/elastic-system/kibana-alert-router:
+      - OPSGENIE_API_KEY
+      - ELASTICSEARCH_USERNAME
+      - ELASTICSEARCH_PASSWORD

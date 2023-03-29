@@ -1,0 +1,10 @@
+apiVersion: v2
+name: service
+description: A Helm chart for finbox
+version: 1.0.0
+appVersion: 0.1.0
+dependencies:
+  - name: finboxService
+    version: 1.0.15
+    repository: "https://investing.jfrog.io/artifactory/microservices-helm-dev-virtual/"
+    alias: kibana-alert-router
