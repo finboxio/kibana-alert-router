@@ -13,7 +13,7 @@ const POLL_INTERVAL = env.string('POLL_INTERVAL', '1m')
 const ELASTICSEARCH_URL = env.string('ELASTICSEARCH_URL')
 const ELASTICSEARCH_USERNAME = env.string('ELASTICSEARCH_USERNAME')
 const ELASTICSEARCH_PASSWORD = env.string('ELASTICSEARCH_PASSWORD')
-const ELASTICSEARCH_CA_FILE = env.string('ELASTICSEARCH_CA_FILE')
+const ELASTICSEARCH_CA_FILE = env.string('ELASTICSEARCH_CA_FILE', '')
 const ELASTICSEARCH_ALERT_INDEX = env.string('ELASTICSEARCH_ALERT_INDEX')
 
 const PAGERDUTY_ROUTING_KEY = env.string('PAGERDUTY_ROUTING_KEY', '')
@@ -27,10 +27,12 @@ const es = new Elasticsearch.Client({
     username: ELASTICSEARCH_USERNAME,
     password: ELASTICSEARCH_PASSWORD
   },
-  ssl: {
-    ca: fs.readFileSync(ELASTICSEARCH_CA_FILE),
-    rejectUnauthorized: true
-  }
+  ...(ELASTICSEARCH_CA_FILE ? {
+    ssl: {
+      ca: fs.readFileSync(ELASTICSEARCH_CA_FILE),
+      rejectUnauthorized: true
+    }
+  } : {})
 })
 
 const start = Date.now() - ms('24h')

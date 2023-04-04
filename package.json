@@ -1,6 +1,6 @@
 {
   "name": "kibana-alert-router",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Forwards kibana alerts written to an elasticsearch index",
   "main": "index.js",
   "type": "module",
