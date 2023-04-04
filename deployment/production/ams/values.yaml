@@ -1,6 +1,6 @@
 kibana-alert-router:
   image:
-    imageURL: "nexus.investing.com/jfrog/finbox-docker-dev-local/finbox/kibana-alerts-test"
+    imageURL: "nexus.investing.com/jfrog/finbox-docker-dev-local/finbox/kibana-alerts"
     pullPolicy: "Always"
     tag: v0.1.1-dev
     command:
