@@ -5,6 +5,6 @@ version: 1.0.0
 appVersion: 0.1.0
 dependencies:
   - name: finboxservice
-    version: 1.1.37
+    version: 1.1.38
     repository: "oci://europe-west4-docker.pkg.dev/investing-com-euro-production/helm-dev-local"
     alias: kibana-alert-router
