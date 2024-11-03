@@ -83,7 +83,7 @@ const run = async () => {
       })
       .filter(Boolean)
 
-    if (action === 'logs.threshold.fired' || action === 'metrics.inventory_threshold.fired' || action === 'metrics.threshold.fired') {
+    if (action === 'logs.threshold.fired' || action === 'metrics.inventory_threshold.fired' || action === 'metrics.threshold.fired' || action === 'query matched') {
       const triggers = await Promise.all(responders.map((r) => r.trigger(alert).catch((e) => e)))
       if (triggers.find((res) => res instanceof Error)) {
         console.error(triggers)
