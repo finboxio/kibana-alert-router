@@ -2,7 +2,7 @@ kibana-alert-router:
   image:
     imageURL: "nexus.investing.com/gar-europe/investing-com-euro-production/docker-prod-local/finbox.kibana-alert-router"
     pullPolicy: "Always"
-    tag: v0.1.2
+    tag: v0.1.3
     command:
       - node
       - index.js
