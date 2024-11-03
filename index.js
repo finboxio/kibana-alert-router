@@ -45,7 +45,6 @@ const Plugins = {
 const run = async () => {
   const unroutedAlerts = await es.search({
     index: ELASTICSEARCH_ALERT_INDEX,
-    type: '_doc',
     size: 10000,
     body: {
       sort: [{ "@timestamp" : "asc" }],
